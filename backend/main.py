@@ -14,7 +14,7 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return('Parabens a todos os envolvidos!')
+    return {"message": "Parabens a todos os envolvidos!"}
 
 @app.get("/life_check")
 def root():

@@ -20,7 +20,13 @@ type Track = {
   yt_search: string;
 };
 
-export function Recommendations() {
+type Props = {
+  onPlay?: (video: any) => void;
+  onAddToQueue?: (video: any) => void;
+};
+
+export function Recommendations({ onPlay, onAddToQueue }: Props) {
+
   const { play, addToQueue, loadingTrack } = usePlayerStore();
 
   const [tracks, setTracks] = useState<Track[]>([]);

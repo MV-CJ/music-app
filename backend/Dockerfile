@@ -2,7 +2,7 @@ FROM python:3.11
 
 WORKDIR /app
 
-# instala dependências do sistema + node + curl
+# deps do sistema
 RUN apt-get update && apt-get install -y \
     nodejs \
     npm \
@@ -12,15 +12,15 @@ RUN apt-get update && apt-get install -y \
 # instala deno
 RUN curl -fsSL https://deno.land/install.sh | sh
 
-# adiciona deno no PATH
 ENV DENO_INSTALL="/root/.deno"
 ENV PATH="$DENO_INSTALL/bin:$PATH"
 
-# instala deps python
+# python deps
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# copia projeto
+# código
 COPY . .
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Render usa $PORT
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-10000}"]
