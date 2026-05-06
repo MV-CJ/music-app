@@ -12,15 +12,17 @@ import { usePlayerStore } from "@/store/usePlayerStore";
 export function Player() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const { repeatMode, setRepeatMode } = usePlayerStore();
-
 
   const {
     current,
+    queue,
+    currentIndex,
     volume,
     setVolume,
     playNext,
     playPrev,
+    repeatMode,
+    setRepeatMode,
   } = usePlayerStore();
 
   const [isPlaying, setIsPlaying] = useState(true);
@@ -51,7 +53,7 @@ export function Player() {
     }
   }, [current]);
 
-  /* SINGLE PLAYER CONTROL */
+  /* PLAYER CONTROL */
   useEffect(() => {
     const active = getActiveMedia();
     const inactive = getInactiveMedia();
@@ -94,7 +96,7 @@ export function Player() {
     }
   };
 
-  const seek = (e: any) => {
+  const seek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const time = Number(e.target.value);
     setCurrentTime(time);
 
@@ -102,7 +104,7 @@ export function Player() {
     if (videoRef.current) videoRef.current.currentTime = time;
   };
 
-  const changeVolume = (e: any) => {
+  const changeVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = Number(e.target.value);
     setVolume(v);
   };
@@ -115,6 +117,7 @@ export function Player() {
 
   return (
     <>
+      {/* VIDEO MODE */}
       {videoMode && (
         <FloatingVideo
           key={current.stream}
@@ -128,6 +131,7 @@ export function Player() {
       )}
 
       <div className={cn("w-full", theme.colors.border)}>
+        {/* PLAYER BAR */}
         <PlayerBar
           current={current}
           isPlaying={isPlaying}
@@ -139,10 +143,9 @@ export function Player() {
           currentTime={currentTime}
           duration={duration}
           volume={volume}
-          onToggleMode={() => setVideoMode(v => !v)}
           videoMode={videoMode}
+          onToggleMode={() => setVideoMode(v => !v)}
           onToggleQueue={() => setShowQueue(v => !v)}
-
           repeatMode={repeatMode}
           onToggleRepeat={() =>
             setRepeatMode(
@@ -155,17 +158,20 @@ export function Player() {
           }
         />
 
+        {/* QUEUE */}
         <QueuePanel
-            open={showQueue}
-            onClose={() => setShowQueue(false)}
-          />
+          open={showQueue}
+          onClose={() => setShowQueue(false)}
+        />
+
+        {/* AUDIO */}
         <audio
           ref={audioRef}
           src={current.stream}
-          onTimeUpdate={(e: any) =>
+          onTimeUpdate={(e) =>
             setCurrentTime(e.currentTarget.currentTime)
           }
-          onLoadedMetadata={(e: any) =>
+          onLoadedMetadata={(e) =>
             setDuration(e.currentTarget.duration)
           }
           onEnded={handleEnd}

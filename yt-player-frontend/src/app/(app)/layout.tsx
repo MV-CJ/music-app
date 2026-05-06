@@ -34,7 +34,7 @@ export default function AppLayout({
     }
   }, [player.current, player.queue]);
 
-  // 🔥 agora a busca só navega
+  // 🔥 navegação da busca
   const handleSearch = () => {
     if (!query.trim()) return;
 
@@ -59,7 +59,6 @@ export default function AppLayout({
             <SearchBar
               query={query}
               setQuery={setQuery}
-              onSearch={handleSearch}
               loading={false}
               musicMode={musicMode}
               setMusicMode={setMusicMode}
@@ -73,19 +72,10 @@ export default function AppLayout({
         </div>
       </div>
 
-      {/* 🔥 PLAYER FIXO */}
+      {/* 🔥 PLAYER FIXO (CORRIGIDO) */}
       {mounted && player.playerOpen && (
         <div className="fixed bottom-0 left-0 right-0 z-50 md:left-64">
-          <Player
-            current={player.current}
-            queue={player.queue}
-            currentIndex={player.currentIndex}
-            onNext={player.playNext}
-            onPrev={player.playPrev}
-            onSelect={player.selectFromQueue}
-            onRemove={player.removeFromQueue}
-            onEnd={player.playNext}
-          />
+          <Player />
         </div>
       )}
     </div>
