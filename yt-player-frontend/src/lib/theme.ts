@@ -1,20 +1,33 @@
 export const theme = {
   colors: {
-    bg: "bg-zinc-950",
-    panel: "bg-white/5",
-    border: "border-white/10",
+    // Fundo um pouco mais claro: tom grafite com leve nuance azulada
+    bg: "bg-[#1A1A24]",
+    
+    // Painéis vidrados com mais presença, sem pesar
+    panel: "bg-white/[0.07]",
+    border: "border-white/[0.10]",
+    
+    // Texto e hierarquia
     text: "text-white",
-    muted: "text-zinc-400",
-    primary: "text-cyan-300",
-    primaryBg: "bg-cyan-400",
-    accent: "text-fuchsia-300",
-    glow: "bg-cyan-400/10",
+    muted: "text-stone-300",   // tom suave, boa leitura
+    
+    // Cores mantidas
+    primary: "text-violet-300",
+    primaryBg: "bg-violet-500",
+    
+    accent: "text-amber-300",
+    accentBg: "bg-amber-400",
+    
+    // Glow refinado
+    glow: "bg-violet-500/20",
   },
+  
   radius: {
     xl: "rounded-2xl",
   },
+  
   effects: {
     glass: "backdrop-blur-xl",
-    hover: "hover:scale-[1.03] transition",
+    hover: "hover:scale-[1.02] transition-all duration-200",
   },
 };

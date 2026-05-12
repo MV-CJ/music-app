@@ -1,23 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Mic2, ArrowLeft, Loader2 } from "lucide-react";
+import {
+  useEffect,
+  useState,
+  useRef,
+} from "react";
+
+import {
+  Mic2,
+  ArrowLeft,
+  Loader2,
+  Headphones,
+  Plus,
+  Play,
+  Disc3,
+  ChevronUp,
+} from "lucide-react";
+
 import Link from "next/link";
 
 import { usePlayerStore } from "@/store/usePlayerStore";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+  Card,
+  CardContent,
+} from "@/components/ui/card";
 
-import { getTopTracks } from "@/lib/api";
+import { Button } from "@/components/ui/button";
 
 /* ---------------- TYPES ---------------- */
 type Track = {
@@ -26,7 +35,8 @@ type Track = {
   artist: string;
   playcount: number;
   listeners: number;
-  image: string;
+  image?: string;
+  artist_image?: string;
   yt_search: string;
 };
 
@@ -34,48 +44,239 @@ type Track = {
 const ITEMS_PER_PAGE = 50;
 
 export default function RankingPage() {
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const scrollRef =
+    useRef<HTMLDivElement>(null);
 
-  const { play, addToQueue, loadingTrack } = usePlayerStore();
+  const [tracks, setTracks] =
+    useState<Track[]>([]);
 
-  /* ---------------- LOAD ---------------- */
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
+  const [loading, setLoading] =
+    useState(true);
 
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/lastfm/top-tracks?page=${currentPage}&limit=${ITEMS_PER_PAGE}`
-        );
+  const [loadingMore, setLoadingMore] =
+    useState(false);
 
-        const json = await res.json();
+  const [currentPage, setCurrentPage] =
+    useState(1);
 
-        setTracks(Array.isArray(json.data) ? json.data : []);
-        setTotalPages(json.total_pages || 1);
+  const [totalPages, setTotalPages] =
+    useState(1);
 
-      } catch (err) {
-        console.error(err);
-        setTracks([]);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [currentPage]);
+  const [hasMore, setHasMore] =
+    useState(true);
+
+  // 👇 botão subir
+  const [showScrollTop, setShowScrollTop] =
+    useState(false);
+
+  const {
+    play,
+    addToQueue,
+    loadingTrack,
+  } = usePlayerStore();
 
   /* ---------------- HELPERS ---------------- */
-  const getId = (t: Track) => `${t.artist}-${t.name}`;
-  const isLoading = (t: Track) => loadingTrack === getId(t);
+  const getId = (t: Track) =>
+    `${t.artist}-${t.name}`;
+
+  const isLoading = (t: Track) =>
+    loadingTrack === getId(t);
+
+  const getTrackImage = (
+    track: Track
+  ) => {
+
+    if (
+      track.artist_image &&
+      track.artist_image.trim() !== ""
+    ) {
+      return track.artist_image;
+    }
+
+    if (
+      track.image &&
+      track.image.trim() !== ""
+    ) {
+      return track.image;
+    }
+
+    return "https://placehold.co/600x600/18181b/71717a?text=Music";
+  };
+
+  /* ---------------- LOAD TRACKS ---------------- */
+  const loadTracks = async (
+    pageToLoad = 1
+  ) => {
+
+    if (loadingMore) return;
+
+    try {
+
+      if (pageToLoad === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/lastfm/top-tracks?page=${pageToLoad}&limit=${ITEMS_PER_PAGE}`
+      );
+
+      const json = await res.json();
+
+      const newTracks =
+        Array.isArray(json.data)
+          ? json.data
+          : [];
+
+      if (newTracks.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      setTracks((prev) => {
+
+        if (pageToLoad === 1) {
+          return newTracks;
+        }
+
+        const existingIds =
+          new Set(
+            prev.map((t) =>
+              `${t.artist}-${t.name}`
+            )
+          );
+
+        const filtered =
+          newTracks.filter(
+            (t) =>
+              !existingIds.has(
+                `${t.artist}-${t.name}`
+              )
+          );
+
+        return [
+          ...prev,
+          ...filtered,
+        ];
+      });
+
+      setTotalPages(
+        json.total_pages || 1
+      );
+
+      setCurrentPage(pageToLoad);
+
+      if (
+        pageToLoad >=
+        (json.total_pages || 1)
+      ) {
+        setHasMore(false);
+      }
+
+    } catch (err) {
+
+      console.error(err);
+
+    } finally {
+
+      setLoading(false);
+      setLoadingMore(false);
+
+    }
+  };
+
+  /* ---------------- INITIAL LOAD ---------------- */
+  useEffect(() => {
+    loadTracks(1);
+  }, []);
+
+  /* ---------------- INFINITE SCROLL ---------------- */
+  useEffect(() => {
+
+    const container =
+      scrollRef.current;
+
+    if (!container) return;
+
+    const handleScroll = () => {
+
+      const {
+        scrollTop,
+        scrollHeight,
+        clientHeight,
+      } = container;
+
+      // 👇 mostrar botão
+      setShowScrollTop(
+        scrollTop > 1200
+      );
+
+      const nearBottom =
+        scrollTop +
+          clientHeight >=
+        scrollHeight - 800;
+
+      if (
+        nearBottom &&
+        hasMore &&
+        !loadingMore
+      ) {
+
+        loadTracks(
+          currentPage + 1
+        );
+      }
+    };
+
+    container.addEventListener(
+      "scroll",
+      handleScroll
+    );
+
+    return () => {
+
+      container.removeEventListener(
+        "scroll",
+        handleScroll
+      );
+    };
+
+  }, [
+    currentPage,
+    hasMore,
+    loadingMore,
+  ]);
+
+  /* ---------------- SCROLL TO TOP ---------------- */
+  const scrollToTop = () => {
+
+    scrollRef.current?.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
 
   /* ---------------- ACTIONS ---------------- */
-  const handlePlay = async (track: Track) => {
+  const handlePlay = async (
+    track: Track
+  ) => {
+
     await play({
       video_id: track.yt_search,
       title: track.name,
       author: track.artist,
+
+      thumbnail:
+        track.artist_image ||
+        track.image,
+
+      artist_image:
+        track.artist_image,
+
+      image:
+        track.image,
     });
   };
 
@@ -83,153 +284,414 @@ export default function RankingPage() {
     e: React.MouseEvent,
     track: Track
   ) => {
+
     e.stopPropagation();
 
     await addToQueue({
       video_id: track.yt_search,
       title: track.name,
       author: track.artist,
+
+      thumbnail:
+        track.artist_image ||
+        track.image,
+
+      artist_image:
+        track.artist_image,
+
+      image:
+        track.image,
     });
   };
 
-  /* ---------------- PAGINATION ---------------- */
-  const renderPages = () => {
-    const pages = [];
-
-    for (let i = 1; i <= Math.min(5, totalPages); i++) {
-      let pageNumber = i;
-
-      if (totalPages > 5 && currentPage > 3) {
-        pageNumber = currentPage - 2 + i;
-        if (pageNumber > totalPages) return null;
-      }
-
-      const isActive = pageNumber === currentPage;
-
-      pages.push(
-        <PaginationItem key={pageNumber}>
-          <PaginationLink
-            isActive={isActive}
-            onClick={() => setCurrentPage(pageNumber)}
-            className={`
-              cursor-pointer
-              ${isActive
-                ? "bg-purple-600 text-white"
-                : "hover:bg-purple-500/20"}
-            `}
-          >
-            {pageNumber}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-
-    return pages;
-  };
-
   return (
-    <div className="h-full w-full p-6 space-y-8 overflow-y-auto">
 
-      {/* HEADER */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold ...">
-          Ranking Global
-        </h1>
+    <div
+      ref={scrollRef}
+      className="
+        h-full
+        w-full
+        overflow-y-auto
+        bg-gradient-to-b
+        from-black
+        via-zinc-950
+        to-black
+        relative
+      "
+    >
 
-        <div className="flex gap-2">
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
+
+        {/* HEADER */}
+        <div className="flex flex-col gap-4">
+
           <Link href="/">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft size={16} /> Voltar
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-fit hover:bg-white/10"
+            >
+              <ArrowLeft
+                size={16}
+                className="mr-2"
+              />
+              Voltar
             </Button>
           </Link>
-        </div>
-      </div>
 
-      {/* GRID */}
-      {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="animate-spin" />
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {tracks.map((track) => (
-            <Card
-              key={getId(track)}
-              onClick={() => handlePlay(track)}
-              className="relative cursor-pointer bg-purple-950/40 border border-purple-500/20 hover:border-purple-400/60 transition"
+          <div className="space-y-2">
+
+            <h1
+              className="
+                text-4xl
+                font-black
+                tracking-tight
+                bg-gradient-to-r
+                from-white
+                via-purple-200
+                to-purple-400
+                bg-clip-text
+                text-transparent
+              "
             >
-              {isLoading(track) && (
-                <div className="absolute inset-0 bg-black/70 flex items-center justify-center z-10">
-                  <Loader2 className="animate-spin text-purple-400" />
-                </div>
-              )}
+              Ranking Global
+            </h1>
 
-              <CardContent className="p-3">
-                <p className="font-bold text-sm">
-                  #{track.rank} {track.name}
-                </p>
+            <p className="text-zinc-400 max-w-2xl">
+              As músicas mais ouvidas do
+              mundo em tempo real.
+            </p>
 
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Mic2 size={10} /> {track.artist}
-                </p>
-
-                <p className="text-[10px] mt-1 text-muted-foreground">
-                  👥 {track.listeners.toLocaleString()}
-                </p>
-
-                <div className="mt-2 flex justify-end">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={(e) => handleQueue(e, track)}
-                  >
-                    + Fila
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          </div>
         </div>
-      )}
 
-      {/* PAGINATION */}
-      {!loading && totalPages > 1 && (
-        <div className="flex justify-center pt-6">
-          <Pagination>
-            <PaginationContent>
+        {/* LOADING */}
+        {loading ? (
 
-              <PaginationItem>
-                <PaginationPrevious
+          <div className="flex flex-col items-center justify-center py-28 gap-4">
+
+            <Loader2 className="animate-spin text-purple-400 w-10 h-10" />
+
+            <p className="text-zinc-500 text-sm">
+              Carregando ranking...
+            </p>
+
+          </div>
+
+        ) : (
+
+          <>
+            {/* GRID */}
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
+              {tracks.map((track) => (
+
+                <Card
+                  key={getId(track)}
+
                   onClick={() =>
-                    setCurrentPage((p) => Math.max(1, p - 1))
+                    handlePlay(track)
                   }
-                  className={currentPage === 1 ? "pointer-events-none opacity-40" : "cursor-pointer"}
-                />
-              </PaginationItem>
 
-              {renderPages()}
+                  className="
+                    group
+                    relative
+                    overflow-hidden
+                    cursor-pointer
+                    border-white/10
+                    bg-white/[0.03]
+                    backdrop-blur-xl
+                    hover:border-purple-400/40
+                    hover:bg-purple-500/10
+                    transition-all
+                    duration-300
+                    hover:scale-[1.02]
+                  "
+                >
 
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() =>
-                    setCurrentPage((p) =>
-                      Math.min(totalPages, p + 1)
-                    )
-                  }
-                  className={currentPage === totalPages ? "pointer-events-none opacity-40" : "cursor-pointer"}
-                />
-              </PaginationItem>
+                  {/* BG */}
+                  <div className="absolute inset-0 overflow-hidden">
 
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
+                    <img
+                      src={getTrackImage(track)}
+                      alt={track.artist}
+                      className="
+                        w-full
+                        h-full
+                        object-cover
+                        scale-125
+                        blur-3xl
+                        opacity-20
+                        group-hover:opacity-30
+                        transition
+                      "
+                    />
 
-      {/* FOOTER */}
-      <div className="text-center text-xs text-muted-foreground">
-        Página {currentPage} de {totalPages}
+                    <div className="absolute inset-0 bg-black/70" />
+
+                  </div>
+
+                  {/* LOADING */}
+                  {isLoading(track) && (
+
+                    <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-20">
+
+                      <Loader2 className="animate-spin text-purple-400 w-8 h-8" />
+
+                    </div>
+                  )}
+
+                  <CardContent className="relative z-10 p-4">
+
+                    {/* COVER */}
+                    <div className="relative mb-4 overflow-hidden rounded-2xl">
+
+                      <img
+                        src={getTrackImage(track)}
+
+                        alt={track.artist}
+
+                        onError={(e) => {
+                          e.currentTarget.src =
+                            "https://placehold.co/600x600/18181b/71717a?text=Music";
+                        }}
+
+                        className="
+                          w-full
+                          aspect-square
+                          object-cover
+                          rounded-2xl
+                          transition-transform
+                          duration-500
+                          group-hover:scale-105
+                        "
+                      />
+
+                      {/* TOP BADGE */}
+                      {track.rank <= 3 && (
+
+                        <div
+                          className="
+                            absolute
+                            top-3
+                            left-3
+                            px-2
+                            py-1
+                            rounded-full
+                            bg-yellow-400
+                            text-black
+                            text-[10px]
+                            font-black
+                            shadow-lg
+                          "
+                        >
+                          TOP {track.rank}
+                        </div>
+                      )}
+
+                      {/* PLAY */}
+                      <div
+                        className="
+                          absolute
+                          inset-0
+                          bg-black/30
+                          opacity-0
+                          group-hover:opacity-100
+                          transition
+                          flex
+                          items-center
+                          justify-center
+                        "
+                      >
+
+                        <div
+                          className="
+                            w-16
+                            h-16
+                            rounded-full
+                            bg-purple-500/90
+                            backdrop-blur-xl
+                            flex
+                            items-center
+                            justify-center
+                            shadow-2xl
+                            shadow-purple-500/40
+                          "
+                        >
+
+                          <Play
+                            className="text-white ml-1"
+                            size={24}
+                            fill="white"
+                          />
+
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* INFO */}
+                    <div className="space-y-3">
+
+                      <div>
+
+                        <p className="text-xs text-purple-400 font-semibold mb-1">
+                          #{track.rank}
+                        </p>
+
+                        <h3
+                          className="
+                            font-bold
+                            leading-tight
+                            line-clamp-2
+                            text-white
+                            text-base
+                          "
+                        >
+                          {track.name}
+                        </h3>
+
+                      </div>
+
+                      <div
+                        className="
+                          flex
+                          items-center
+                          gap-2
+                          text-sm
+                          text-zinc-300
+                        "
+                      >
+
+                        <Mic2 size={14} />
+
+                        <span className="truncate">
+                          {track.artist}
+                        </span>
+
+                      </div>
+
+                      <div
+                        className="
+                          flex
+                          items-center
+                          justify-between
+                          text-xs
+                          text-zinc-400
+                        "
+                      >
+
+                        <div className="flex items-center gap-1">
+
+                          <Headphones size={12} />
+
+                          <span>
+                            {track.listeners.toLocaleString()}
+                          </span>
+
+                        </div>
+
+                        <div className="flex items-center gap-1">
+
+                          <Disc3 size={12} />
+
+                          <span>
+                            {track.playcount.toLocaleString()}
+                          </span>
+
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ACTIONS */}
+                    <div className="mt-5 flex gap-2">
+
+                      <Button
+                        size="sm"
+                        className="
+                          flex-1
+                          bg-purple-600
+                          hover:bg-purple-500
+                          font-semibold
+                        "
+                      >
+                        <Play size={14} />
+                        Ouvir
+                      </Button>
+
+                      <Button
+                        size="icon"
+                        variant="secondary"
+
+                        onClick={(e) =>
+                          handleQueue(
+                            e,
+                            track
+                          )
+                        }
+
+                        className="
+                          bg-white/10
+                          hover:bg-white/20
+                          border
+                          border-white/10
+                        "
+                      >
+                        <Plus size={16} />
+                      </Button>
+
+                    </div>
+
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* LOADING MORE */}
+            {loadingMore && (
+
+              <div className="flex justify-center py-10">
+
+                <Loader2 className="animate-spin text-purple-400 w-8 h-8" />
+
+              </div>
+            )}
+
+          </>
+        )}
       </div>
 
+      {/* 👇 SCROLL TO TOP */}
+      {showScrollTop && (
+
+        <button
+          onClick={scrollToTop}
+          className="
+            fixed
+            bottom-24
+            right-5
+            z-50
+            w-12
+            h-12
+            rounded-full
+            bg-purple-600/90
+            hover:bg-purple-500
+            text-white
+            shadow-2xl
+            shadow-purple-500/30
+            backdrop-blur-xl
+            border
+            border-white/10
+            flex
+            items-center
+            justify-center
+            transition-all
+            duration-300
+            hover:scale-110
+          "
+        >
+          <ChevronUp size={22} />
+        </button>
+      )}
     </div>
   );
 }

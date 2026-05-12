@@ -54,7 +54,8 @@ export function HomeInfo({
 
       <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
         <Radio size={14} />
-        Last.fm + YouTube Backend
+        Toda música deve ser live
+        <Radio size={14} />
       </p>
     </div>
 
@@ -66,14 +67,37 @@ export function HomeInfo({
 
     {/* NAV */}
     <div className="flex items-center justify-end">
-      <Button
-        size="sm"
-        className="bg-purple-800/60 hover:bg-purple-700"
-        onClick={() => router.push("/ranking")}
-      >
-        Ver mais <ChevronRight size={14} />
-      </Button>
-    </div>
+  <Button
+    size="sm"
+    onClick={() => router.push("/ranking")}
+    className="
+      group
+      rounded-xl
+      border
+      border-white/10
+      bg-white/5
+      hover:bg-purple-500/15
+      hover:border-purple-400/30
+      text-zinc-200
+      hover:text-white
+      transition-all
+      duration-300
+      px-4
+    "
+  >
+    Explorar ranking
+
+    <ChevronRight
+      size={15}
+      className="
+        ml-1
+        transition-transform
+        duration-300
+        group-hover:translate-x-0.5
+      "
+    />
+  </Button>
+</div>
 
     <Separator />
 
