@@ -68,7 +68,7 @@ export function Player() {
   const lastTrackRef =
     useRef<string | null>(null);
 
-  const LYRICS_OFFSET = 3.2;
+  const LYRICS_OFFSET = 4.5;
 
   const getActiveMedia = () =>
     videoMode
