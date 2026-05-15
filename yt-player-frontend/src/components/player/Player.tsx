@@ -29,6 +29,47 @@ export function Player() {
   const activeLineRef =
     useRef<HTMLParagraphElement | null>(null);
 
+  const intervalRef =
+    useRef<NodeJS.Timeout | null>(null);
+
+  const startAdjust = (
+  value: number
+) => {
+
+  let step = value;
+
+  setLyricsOffset(prev =>
+    Number((prev + step).toFixed(1))
+  );
+
+  intervalRef.current =
+    setInterval(() => {
+
+      step =
+        Math.abs(step) < 0.5
+          ? step + (value > 0 ? 0.1 : -0.1)
+          : step;
+
+      setLyricsOffset(prev =>
+        Number(
+          (prev + step).toFixed(1)
+        )
+      );
+
+    }, 100);
+};
+
+  const stopAdjust = () => {
+
+    if (intervalRef.current) {
+      clearInterval(
+        intervalRef.current
+      );
+
+      intervalRef.current = null;
+    }
+  };
+
   const {
     current,
     volume,
@@ -361,18 +402,22 @@ export function Player() {
 <div className="flex gap-3 mt-4">
 
   <button
-    onClick={() =>
-      setLyricsOffset(prev =>
-        Number(
-          (prev - 0.1)
-          .toFixed(1)
-        )
-      )
+    onMouseDown={() =>
+      startAdjust(-0.1)
     }
+
+    onMouseUp={stopAdjust}
+    onMouseLeave={stopAdjust}
+    onTouchStart={() =>
+      startAdjust(-0.1)
+    }
+    onTouchEnd={stopAdjust}
+
     className="
       px-3 py-1
       rounded-full
       bg-zinc-800
+      active:scale-95
     "
   >
     -0.1s
@@ -383,18 +428,22 @@ export function Player() {
   </span>
 
   <button
-    onClick={() =>
-      setLyricsOffset(prev =>
-        Number(
-          (prev + 0.1)
-          .toFixed(1)
-        )
-      )
+    onMouseDown={() =>
+      startAdjust(0.1)
     }
+
+    onMouseUp={stopAdjust}
+    onMouseLeave={stopAdjust}
+    onTouchStart={() =>
+      startAdjust(0.1)
+    }
+    onTouchEnd={stopAdjust}
+
     className="
       px-3 py-1
       rounded-full
       bg-zinc-800
+      active:scale-95
     "
   >
     +0.1s
