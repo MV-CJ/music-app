@@ -61,11 +61,11 @@ export default function Home() {
           />
         ) : (
           <MusicGrid
-            results={results}
+            items={results}
             loading={loading}
-            onPlay={(video: any) => player.play(video)}// 🔥 wrapper aqui também
-            onAddToQueue={(video: any) => player.addToQueue(video)}
             loadingTrack={player.loadingTrack}
+            onPlay={player.play}
+            onQueue={player.addToQueue}
           />
         )}
       </div>

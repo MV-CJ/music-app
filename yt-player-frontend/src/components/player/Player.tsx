@@ -68,7 +68,8 @@ export function Player() {
   const lastTrackRef =
     useRef<string | null>(null);
 
-  const LYRICS_OFFSET = 4.5;
+  const [lyricsOffset, setLyricsOffset] =
+    useState(0);
 
   const getActiveMedia = () =>
     videoMode
@@ -115,20 +116,27 @@ export function Player() {
   useEffect(() => {
     if (!lyrics.length) return;
 
-    const index = lyrics.findIndex(
-      (line, i) =>
-        currentTime >=
-          line.time + LYRICS_OFFSET &&
-        (!lyrics[i + 1] ||
-          currentTime <
-            lyrics[i + 1].time +
-              LYRICS_OFFSET)
-    );
+    const adjustedTime =
+      currentTime + lyricsOffset;
+
+    const index =
+      lyrics.findIndex(
+        (line, i) =>
+          adjustedTime >= line.time &&
+          (!lyrics[i + 1] ||
+            adjustedTime <
+              lyrics[i + 1].time)
+      );
 
     if (index !== -1) {
       setActiveLine(index);
     }
-  }, [currentTime, lyrics]);
+
+  }, [
+    currentTime,
+    lyrics,
+    lyricsOffset
+  ]);
 
   /* AUTO SCROLL */
   useEffect(() => {
@@ -348,6 +356,51 @@ export function Player() {
                   {current.author}
                 </p>
               </div>
+
+              {/* AJUSTE LETRA */}
+<div className="flex gap-3 mt-4">
+
+  <button
+    onClick={() =>
+      setLyricsOffset(prev =>
+        Number(
+          (prev - 0.1)
+          .toFixed(1)
+        )
+      )
+    }
+    className="
+      px-3 py-1
+      rounded-full
+      bg-zinc-800
+    "
+  >
+    -0.1s
+  </button>
+
+  <span className="min-w-[60px] text-center">
+    {lyricsOffset.toFixed(1)}s
+  </span>
+
+  <button
+    onClick={() =>
+      setLyricsOffset(prev =>
+        Number(
+          (prev + 0.1)
+          .toFixed(1)
+        )
+      )
+    }
+    className="
+      px-3 py-1
+      rounded-full
+      bg-zinc-800
+    "
+  >
+    +0.1s
+  </button>
+
+</div>
 
               {/* EMPTY */}
               {lyrics.length === 0 && (

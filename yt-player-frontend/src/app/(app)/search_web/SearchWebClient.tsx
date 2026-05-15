@@ -23,10 +23,13 @@ export default function SearchWebClient() {
 
   const player = usePlayerStore()
 
-  const loadMoreRef = useRef<HTMLDivElement | null>(null)
-  const isFetchingRef = useRef(false)
+  const loadMoreRef =
+    useRef<HTMLDivElement | null>(null)
 
-  /* RESET SEARCH */
+  const isFetchingRef =
+    useRef(false)
+
+  /* RESET QUANDO MUDA BUSCA */
   useEffect(() => {
     setResults([])
     setPage(1)
@@ -34,7 +37,8 @@ export default function SearchWebClient() {
     isFetchingRef.current = false
   }, [queryParam, musicParam])
 
-  /* FETCH DATA */
+
+  /* FETCH */
   useEffect(() => {
     if (!queryParam) return
 
@@ -51,105 +55,185 @@ export default function SearchWebClient() {
           page
         )
 
-        setTotalPages(data.total_pages || 1)
+        setTotalPages(
+          data.total_pages || 1
+        )
 
-        setResults((prev) => {
-          const existingIds = new Set(
-            prev.map((item) => item.video_id)
-          )
+        setResults(prev => {
+          const existing =
+            new Set(
+              prev.map(
+                item => item.video_id
+              )
+            )
 
-          const filtered = (data.data || []).filter(
-            (item: any) => !existingIds.has(item.video_id)
-          )
+          const filtered =
+            (data.data || []).filter(
+              (item: any) =>
+                !existing.has(
+                  item.video_id
+                )
+            )
 
-          return [...prev, ...filtered]
+          return [
+            ...prev,
+            ...filtered,
+          ]
         })
+
       } catch (err) {
         console.error(err)
       } finally {
         setLoading(false)
-        isFetchingRef.current = false
+        isFetchingRef.current =
+          false
       }
     }
 
     run()
-  }, [queryParam, musicParam, page])
+
+  }, [
+    queryParam,
+    musicParam,
+    page
+  ])
+
 
   /* INFINITE SCROLL */
   useEffect(() => {
-    const target = loadMoreRef.current
+    const target =
+      loadMoreRef.current
+
     if (!target) return
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (
-          entry.isIntersecting &&
-          !loading &&
-          page < totalPages &&
-          !isFetchingRef.current
-        ) {
-          setPage((prev) => prev + 1)
+    const observer =
+      new IntersectionObserver(
+        ([entry]) => {
+
+          if (
+            entry.isIntersecting &&
+            !isFetchingRef.current &&
+            page < totalPages
+          ) {
+            setPage(
+              prev => prev + 1
+            )
+          }
+
+        },
+        {
+          rootMargin:
+            "250px",
         }
-      },
-      {
-        root: null,
-        rootMargin: "300px",
-        threshold: 0,
-      }
-    )
+      )
 
     observer.observe(target)
-    return () => observer.disconnect()
-  }, [loading, page, totalPages])
 
-  /* LOADING PRIMEIRA PÁGINA (FULL SCREEN FEEL) */
-  const isInitialLoading = loading && page === 1
+    return () =>
+      observer.disconnect()
+
+  }, [page, totalPages])
+
+
+  const isInitialLoading =
+    loading &&
+    page === 1
 
   return (
     <div className="px-3 sm:px-6 py-4 min-h-screen">
+
       <AppHeader title="Busca" />
 
       <h2 className="text-lg font-bold mb-4">
-        Resultados para: "{queryParam}"
+        Resultados para:
+        {" "}
+        "{queryParam}"
       </h2>
 
-      {/* 🔥 LOADING BONITO CENTRAL */}
+
       {isInitialLoading ? (
+
         <div className="flex flex-col items-center justify-center py-40">
-          <Loader2 className="w-10 h-10 animate-spin text-purple-400" />
+
+          <Loader2
+            className="
+              w-10
+              h-10
+              animate-spin
+              text-purple-400
+            "
+          />
+
           <p className="text-sm text-zinc-500 mt-3">
             Buscando músicas...
           </p>
+
         </div>
+
       ) : (
+
         <>
           <MusicGrid
-            results={results}
-            loading={false}
-            onPlay={player.play}
-            onAddToQueue={player.addToQueue}
-            loadingTrack={player.loadingTrack}
+            items={results}
+
+            /* skeleton só na primeira página */
+            loading={
+              loading &&
+              page === 1
+            }
+
+            loadingTrack={
+              player.loadingTrack
+            }
+
+            onPlay={
+              player.play
+            }
+
+            onQueue={
+              player.addToQueue
+            }
           />
 
-          {/* TRIGGER INFINITO */}
           <div
             ref={loadMoreRef}
-            className="h-20 flex items-center justify-center"
+            className="
+              h-20
+              flex
+              items-center
+              justify-center
+            "
           >
-            {loading && page > 1 && (
-              <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+
+            {loading &&
+              page > 1 && (
+
+              <Loader2
+                className="
+                  w-5
+                  h-5
+                  animate-spin
+                  text-zinc-400
+                "
+              />
+
             )}
 
             {!loading &&
               page >= totalPages &&
               results.length > 0 && (
-                <span className="text-sm text-zinc-500">
-                  Fim dos resultados
-                </span>
-              )}
+
+              <span className="text-sm text-zinc-500">
+                Fim dos resultados
+              </span>
+
+            )}
+
           </div>
         </>
+
       )}
+
     </div>
   )
 }
