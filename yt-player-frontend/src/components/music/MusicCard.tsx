@@ -13,6 +13,7 @@ import { theme } from "@/lib/theme";
 
 interface Props {
   item: any;
+  rank?: number;
 
   loading?: boolean;
 
@@ -27,10 +28,12 @@ interface Props {
 
 export function MusicCard({
     item,
+    rank,
     onPlay,
     onQueue,
-  }: Props) {
+}: Props) {
 
+  
   return (
     <Card
       onClick={() => onPlay(item)}
@@ -48,29 +51,65 @@ export function MusicCard({
       {/* IMAGE */}
       <div className="relative overflow-hidden rounded-t-3xl bg-zinc-900">
 
-        <img
-          src={
-            item.thumbnail ||
-            item.artist_image ||
-            item.image ||
-            "https://placehold.co/600x600/18181b/71717a?text=Music"
-          }
+  {/* RANK */}
+  {rank && rank <= 3 && (
 
-          onError={(e) => {
-            e.currentTarget.src =
-              "https://placehold.co/600x600/18181b/71717a?text=Music";
-          }}
+    <div
+      className={`
+        absolute
+        top-3
+        left-3
+        z-20
+        px-3
+        py-1
+        rounded-full
+        backdrop-blur-xl
+        text-xs
+        font-bold
+        border
+        shadow-lg
 
-          className="
-            h-56
-            w-full
-            object-cover
-            opacity-90
-            block
-          "
-        />
+        ${
+          rank === 1
+            ? "bg-yellow-400/20 text-yellow-200 border-yellow-300/30 shadow-yellow-500/20"
+            : rank === 2
+            ? "bg-zinc-300/20 text-zinc-100 border-zinc-200/30 shadow-zinc-400/20"
+            : "bg-amber-700/20 text-amber-200 border-amber-500/30 shadow-amber-700/20"
+        }
+      `}
+    >
 
-      </div>
+      {rank === 1 && "🥇 #1"}
+      {rank === 2 && "🥈 #2"}
+      {rank === 3 && "🥉 #3"}
+
+    </div>
+
+  )}
+
+  <img
+    src={
+      item.thumbnail ||
+      item.artist_image ||
+      item.image ||
+      "https://placehold.co/600x600/18181b/71717a?text=Music"
+    }
+
+    onError={(e) => {
+      e.currentTarget.src =
+        "https://placehold.co/600x600/18181b/71717a?text=Music";
+    }}
+
+    className="
+      h-56
+      w-full
+      object-cover
+      opacity-90
+      block
+    "
+  />
+
+</div>
 
       {/* CONTENT */}
       <div className="p-3">

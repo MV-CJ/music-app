@@ -48,21 +48,22 @@ export function MusicGrid({
 
       {items.map((item, index) => (
         <MusicCard
-          key={
-            item?.video_id ||
-            `${item?.artist}-${item?.name}` ||
-            index
-          }
+        key={
+          item?.video_id ||
+          `${item?.artist}-${item?.name}` ||
+          index
+        }
 
-          item={item}
+        item={item}
+        rank={index + 1}
 
-          loading={
-            loadingTrack === item?.video_id
-          }
+        loading={
+          loadingTrack === item?.video_id
+        }
 
-          onPlay={onPlay}
-          onQueue={onQueue}
-        />
+        onPlay={onPlay}
+        onQueue={onQueue}
+      />
       ))}
 
     </div>

@@ -130,7 +130,10 @@ export default function RankingPage() {
 
           <>
             <MusicGrid
-              items={tracks}
+              items={tracks.map((track, index) => ({
+                ...track,
+                rank: index + 1,
+              }))}
               loading={loading}
               loadingTrack={loadingTrack}
               onPlay={handlePlay}
